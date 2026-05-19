@@ -4,7 +4,7 @@
 
 *Muhanad Husn — analytic report based on the [Multidimensional-poverty-in-Ethiopia](https://github.com/Muhanad-husn/Multidimensional-poverty-in-Ethiopia) repository.*
 
-![Hero figure: regional MPI choropleth with dominant-deprivation overlay](figures/hero.png)
+![Hero figure: regional MPI choropleth with dominant-deprivation overlay](hero.png)
 *Figure 1. Regional MPI for Ethiopia (DHS 2019), with a green square at each region's centroid marking the dimension that contributes the largest share of MPI in that region. In every region, that dimension is living standards.*
 
 ---
@@ -55,14 +55,14 @@ The headline is short, and it lands hard.
 
 **Living standards dominates in every region.** Nationally, living standards contributes about 50% of MPI; education contributes around 30%, and health around 20%. The pattern is remarkably consistent across the regional decomposition: in every region the green segment in Figure 2 is the largest one. That is the empirical content of the green-square overlay in Figure 1. The dominant deprivation dimension is the same everywhere in Ethiopia. What varies between regions is *intensity*, not *composition*.
 
-![Figure 2: MPI decomposition by deprivation dimension and region](figures/decomposition_by_region_dimension.png)
+![Figure 2: MPI decomposition by deprivation dimension and region](decomposition_by_region_dimension.png)
 *Figure 2. MPI contribution shares by dimension, by region. Red = health, blue = education, green = living standards. Living standards is the largest contributor in every region; education's share is slightly larger in the urbanised Harari, Dire Dawa, and Addis Ababa.*
 
 **Honouring the survey design matters quantitatively, not just in principle.** A naive estimator that ignores weights, strata, and clusters gives MPI = 0.369 with SE = 0.0038. The correctly designed estimator gives MPI = 0.385 with SE = 0.0117. The point estimate moves by 1.6 percentage points, and the standard error inflates by 3.0×. The naive confidence interval is not just narrower; it is wrong, because it pretends the 8,663 households are independent when they sit inside 305 clusters whose members share local infrastructure, water sources, schools, and markets.
 
 **The ML overlay reaches AUC = 0.93** (XGBoost, GroupKFold on `hv001`, 5 folds), and the SHAP top features are exactly what the household-economics literature predicts. `hv271` (the DHS wealth factor score) and `mean_schooling_adults` lead by a clear margin, with `max_age`, `share_female`, `hv040` (altitude), `mean_age`, and `share_child` following. The wealth-index dominance is the empirical signature of the **partial circularity** I document as Decision 5: `hv271` is constructed from many of the same asset and housing items that feed the OPHI living-standards indicators, and the wealth-dropped re-run (§5 below) quantifies how much of the AUC is wealth alone.
 
-![Figure 3: Top-15 SHAP features, survey-weighted, with bootstrap 95% CIs](figures/shap_top15_bootstrap_ci.png)
+![Figure 3: Top-15 SHAP features, survey-weighted, with bootstrap 95% CIs](shap_top15_bootstrap_ci.png)
 *Figure 3. Top-15 SHAP features ranked by survey-weighted mean |SHAP|, with 500-replicate bootstrap 95% CIs. `hv271` (DHS wealth factor) and `mean_schooling_adults` are statistically separated from the rest of the field; the third place onwards is a tightly clustered group.*
 
 ## 5. The robustness story: does the headline survive?
@@ -81,7 +81,7 @@ The headline rests on six load-bearing decisions, every one of which could have 
 
 **The full uncapped SHAP plot** (Figure 4) lets the reader see direction-of-effect, not just magnitude. High `hv271` (wealthier households) pulls predictions down (the red dots sit on the left of zero); high `mean_schooling_adults` does the same. High `hv040` (altitude) and `share_female` push predictions up. The pattern beyond rank 8 is thin, which is why I capped the headline table at 15.
 
-![Figure 4: Full SHAP beeswarm](figures/shap_beeswarm_full.png)
+![Figure 4: Full SHAP beeswarm](shap_beeswarm_full.png)
 *Figure 4. Full SHAP summary (beeswarm). One row per feature, one dot per household; x-axis is signed SHAP value; color is feature value. The headline top-15 captures the substantive distributional signal; the region dummies below `region_4` carry mostly noise.*
 
 What does this whole robustness ledger mean in practice? **The Somali-highest, Addis-lowest headline survives every check.** Living standards dominates in every region under every variation. The XGBoost AUC is well-supported. The two findings I'd qualify rather than retract are (a) the strict 1-vs-2 SHAP ordering at the top, which the bootstrap CIs collapse to a tie, and (b) the LOO-region spread, which says the global classifier does not transport equally well to every held-out region. The SNNPR case at AUC = 0.818 is the worst.
