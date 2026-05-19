@@ -468,3 +468,108 @@ def test_choropleth_renders_with_synthetic_gdf():
         assert ax.collections, "no patches drawn"
     finally:
         plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Session 5 — ML feature importance, cluster-respecting CV, weighted SHAP
+# ---------------------------------------------------------------------------
+
+def _build_ml_inputs():
+    """Build feature matrix / target / groups / weights from the fixture."""
+    from ethiopia_mpi import mpi
+    from ethiopia_mpi.data import load_dhs_recode
+    from ethiopia_mpi.ml import build_feature_matrix
+
+    hr = load_dhs_recode("HR", raw_dir=FIXTURE_RAW)
+    pr = load_dhs_recode("PR", raw_dir=FIXTURE_RAW)
+    br = load_dhs_recode("BR", raw_dir=FIXTURE_RAW, columns=mpi.BR_COLS)
+    # available-case keeps every household with at least one observed indicator
+    # — gives the ML smoke a non-trivial target on the fixture's injected NaNs.
+    hh = mpi.build_household_mpi(hr, pr, br, missing_policy="available-case")
+    return build_feature_matrix(hr, pr, hh)
+
+
+def test_ml_feature_matrix_excludes_ophi_indicators():
+    """The non-negotiable check: no OPHI indicator (or MPI-derived column)
+    appears in the feature matrix."""
+    from ethiopia_mpi.ml import EXCLUDED
+
+    X, y, groups, weights = _build_ml_inputs()
+
+    leaked = EXCLUDED.intersection(X.columns)
+    assert not leaked, f"OPHI indicators leaked into features: {leaked}"
+    # the four returned objects are co-indexed and non-empty
+    assert len(X) == len(y) == len(groups) == len(weights) > 0
+    assert X.index.equals(y.index)
+    # the cluster ID is the DHS household-recode column, not the women's recode
+    assert groups.name == "hv001"
+
+
+def test_ml_cluster_respecting_cv_runs():
+    """`cross_validate_clustered` returns finite per-fold AUC/F1 and a model
+    fit on all valid rows; the 5-fold split honors GroupKFold semantics."""
+    import math
+
+    from ethiopia_mpi.ml import cross_validate_clustered
+
+    X, y, groups, weights = _build_ml_inputs()
+    out = cross_validate_clustered(X, y, groups, model="rf", n_splits=5)
+
+    assert len(out["fold_auc"]) == 5
+    assert all(0.0 <= a <= 1.0 and math.isfinite(a) for a in out["fold_auc"])
+    assert 0.0 <= out["auc_mean"] <= 1.0
+    # the fitted final model exposes the sklearn estimator API
+    assert hasattr(out["model"], "predict_proba")
+    assert out["n_train"] == int(y.notna().sum())
+
+
+def test_ml_leakage_diagnostic_returns_both_scores():
+    """`leakage_diagnostic` runs both KFold and GroupKFold and reports the gap.
+
+    The fixture is synthetic so cluster IDs carry no real spatial signal —
+    the gap can be either sign. The real DHS data is expected to show a
+    positive gap (random over-optimistic); the test only requires the
+    numbers are finite and the diagnostic returns both views.
+    """
+    import math
+
+    from ethiopia_mpi.ml import leakage_diagnostic
+
+    X, y, groups, weights = _build_ml_inputs()
+    out = leakage_diagnostic(X, y, groups, model="rf", n_splits=5)
+
+    assert len(out["random_auc"]) == 5 and len(out["clustered_auc"]) == 5
+    assert math.isfinite(out["random_mean"]) and math.isfinite(out["clustered_mean"])
+    assert math.isfinite(out["gap"])
+    # the gap is exactly random_mean - clustered_mean by construction
+    assert abs(out["gap"] - (out["random_mean"] - out["clustered_mean"])) < 1e-9
+
+
+def test_ml_shap_summary_weighted_and_top_n():
+    """`shap_summary` returns a tidy top-N frame with both weighted and
+    unweighted importance and a 1-indexed rank column."""
+    from ethiopia_mpi.ml import cross_validate_clustered, shap_summary
+
+    X, y, groups, weights = _build_ml_inputs()
+    cv = cross_validate_clustered(X, y, groups, model="xgb", n_splits=5)
+
+    sm = shap_summary(cv["model"], X, sample_weight=weights, top_n=10)
+
+    assert list(sm.columns) == [
+        "feature", "mean_abs_shap", "weighted_mean_abs_shap", "rank"
+    ]
+    assert len(sm) == 10
+    assert sm["rank"].tolist() == list(range(1, 11))
+    # ranked by weighted importance: descending and non-negative
+    assert (sm["weighted_mean_abs_shap"].diff().dropna() <= 0).all()
+    assert (sm["weighted_mean_abs_shap"] >= 0).all()
+    # all reported features are real columns in X (no spurious rows)
+    assert set(sm["feature"]).issubset(set(X.columns))
+
+    # weights=None falls back to the unweighted summary identically
+    sm_uw = shap_summary(cv["model"], X, sample_weight=None, top_n=10)
+    import numpy as np
+    assert np.allclose(
+        sm_uw["weighted_mean_abs_shap"].to_numpy(),
+        sm_uw["mean_abs_shap"].to_numpy(),
+    )

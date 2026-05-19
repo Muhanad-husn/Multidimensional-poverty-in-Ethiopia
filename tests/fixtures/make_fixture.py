@@ -104,8 +104,22 @@ def build_fixture() -> dict[str, Path]:
             "hv221": rng.integers(0, 2, size=N_HH),   # telephone (land-line)
             "hv243a": rng.integers(0, 2, size=N_HH),  # mobile telephone
             "hv246": rng.integers(0, 2, size=N_HH),   # owns livestock
+            "hv040": rng.integers(500, 3500, size=N_HH).astype(float),  # altitude (m)
         }
     )
+    # Wealth index — correlated with asset/electricity ownership so the ML
+    # feature-importance overlay has signal on the fixture. Real DHS supplies
+    # hv270 (quintile 1-5) and hv271 (continuous factor score x 100_000).
+    _asset_load = (
+        hr["hv206"].astype(float)             # electricity
+        + hr["hv208"].astype(float)           # tv
+        + hr["hv209"].astype(float)           # fridge
+        + hr["hv212"].astype(float)           # car
+        + hr["hv243a"].astype(float)          # mobile
+    )
+    score = _asset_load + rng.normal(0, 0.5, size=N_HH)
+    hr["hv271"] = ((score - score.mean()) / score.std() * 100_000).round().astype(float)
+    hr["hv270"] = pd.qcut(hr["hv271"], 5, labels=False, duplicates="drop").astype(float) + 1
     hr = hr.astype({c: "float64" for c in hr.columns if c != "hhid"})
     _inject_missing(hr, ["hv201", "hv205", "hv226", "hv213"], rate=0.04, rng=rng)
 
