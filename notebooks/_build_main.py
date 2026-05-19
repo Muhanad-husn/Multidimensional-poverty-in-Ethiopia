@@ -294,6 +294,7 @@ fig, ax = plt.subplots(figsize=(8, 6))
 viz.decomposition_bars(contrib, value="contribution",
                        region_labels=region_labels, ax=ax,
                        title="MPI decomposition by deprivation dimension")
+viz.save_figure(fig, "decomposition_by_region_dimension")
 plt.show()
 """
 )
