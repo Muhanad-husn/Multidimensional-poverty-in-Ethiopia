@@ -1,25 +1,56 @@
-# Python
+# Python build / bytecode
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 *.so
 *.egg
 *.egg-info/
 dist/
 build/
 .eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Virtual environments
 .venv/
 venv/
 env/
+ENV/
 .env
 .env.local
 .env.*.local
+.python-version
+
+# Test / lint / type-check tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.pyre/
+.dmypy.json
+dmypy.json
+.hypothesis/
+.tox/
+.nox/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+
+# Profiling
+*.prof
+*.lprof
 
 # Jupyter
 .ipynb_checkpoints/
+*.nbconvert.ipynb
+.virtual_documents/
 
 # Data — raw DHS microdata is NOT committed (license forbids redistribution).
 # data/raw/README.md IS committed (documents the required files + access workflow).
@@ -30,28 +61,43 @@ data/external/*
 !data/external/.gitkeep
 # data/processed/ IS committed (small parquets, no PII)
 
-# Cache (requests-cache SQLite, pickled intermediates)
+# Project caches (requests-cache SQLite, pickled intermediates)
 .cache/
 *.sqlite
 *.sqlite-journal
+*.db-journal
 
 # Scratch notebooks
 notebooks/_scratch/
 
-# IDE
+# IDE / editors
 .idea/
 .vscode/
 *.swp
+*.swo
+*~
+*.bak
+*.tmp
 
-# OS
+# OS junk
 .DS_Store
+.AppleDouble
+.LSOverride
 Thumbs.db
+ehthumbs.db
 desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+*.log
+logs/
 
 # Secrets
 secrets/
 *.key
 *.pem
+*.p12
+*.pfx
 
 # AI assistant patterns & behaviour — kept untracked
 .claude/
@@ -63,4 +109,5 @@ CLAUDE.local.md
 AGENTS.md
 .claude-*
 *.claude.md
+MEMORY.md
 IMPLEMENTATION_PLAN.md
