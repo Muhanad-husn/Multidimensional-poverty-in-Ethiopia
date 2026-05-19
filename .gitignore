@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+.env.local
+.env.*.local
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data — raw DHS microdata is NOT committed (license forbids redistribution).
+# data/raw/README.md IS committed (documents the required files + access workflow).
+data/raw/*
+!data/raw/README.md
+!data/raw/.gitkeep
+data/external/*
+!data/external/.gitkeep
+# data/processed/ IS committed (small parquets, no PII)
+
+# Cache (requests-cache SQLite, pickled intermediates)
+.cache/
+*.sqlite
+*.sqlite-journal
+
+# Scratch notebooks
+notebooks/_scratch/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets
+secrets/
+*.key
+*.pem
+
+# AI assistant patterns & behaviour — kept untracked
+.claude/
+.cursor/
+.aider*
+CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
+AGENTS.md
+.claude-*
+*.claude.md
